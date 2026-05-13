@@ -30,15 +30,15 @@ struct UsageState: Codable {
 
 // MARK: — i18n
 struct L {
-    let session, weekly, weeklySonnet, resets, updated, refresh, close, noData, noDataSub, stale: String
+    let heading, session, weekly, weeklySonnet, resets, updated, refresh, close, noData, noDataSub, stale: String
     static func detect() -> L {
         let code = Locale.current.language.languageCode?.identifier ?? "en"
         switch code {
-        case "es": return L(session:"Sesion (5h)",weekly:"Semana (todo)",weeklySonnet:"Semana (Sonnet)",resets:"Reinicia",updated:"Actualizado",refresh:"Actualizar",close:"Cerrar",noData:"Sin datos de uso",noDataSub:"Envia un mensaje en Claude Code",stale:" (desactualizado)")
-        case "pt": return L(session:"Sessao (5h)",weekly:"Semana (tudo)",weeklySonnet:"Semana (Sonnet)",resets:"Reinicia",updated:"Atualizado",refresh:"Atualizar",close:"Fechar",noData:"Sem dados de uso",noDataSub:"Envie uma mensagem no Claude Code",stale:" (desatualizado)")
-        case "fr": return L(session:"Session (5h)",weekly:"Semaine (tout)",weeklySonnet:"Semaine (Sonnet)",resets:"Reinit.",updated:"Mis a jour",refresh:"Actualiser",close:"Fermer",noData:"Aucune donnee",noDataSub:"Envoyez un message dans Claude Code",stale:" (perime)")
-        case "de": return L(session:"Sitzung (5h)",weekly:"Woche (alle)",weeklySonnet:"Woche (Sonnet)",resets:"Reset",updated:"Aktualisiert",refresh:"Aktualisieren",close:"Schliessen",noData:"Keine Daten",noDataSub:"Sende eine Nachricht in Claude Code",stale:" (veraltet)")
-        default:   return L(session:"Session (5h)",weekly:"Weekly (all)",weeklySonnet:"Weekly (Sonnet)",resets:"Resets",updated:"Updated",refresh:"Refresh",close:"Close",noData:"No usage data yet",noDataSub:"Send a message in Claude Code",stale:" (stale)")
+        case "es": return L(heading:"Claude Code — Límites de uso",session:"Sesión (5h)",weekly:"Semana (todo)",weeklySonnet:"Semana (Sonnet)",resets:"↻",updated:"Actualizado",refresh:"Actualizar",close:"Cerrar",noData:"Sin datos de uso",noDataSub:"Envía un mensaje en Claude Code",stale:" (desactualizado)")
+        case "pt": return L(heading:"Claude Code — Limites de uso",session:"Sessão (5h)",weekly:"Semana (tudo)",weeklySonnet:"Semana (Sonnet)",resets:"↻",updated:"Atualizado",refresh:"Atualizar",close:"Fechar",noData:"Sem dados de uso",noDataSub:"Envie uma mensagem no Claude Code",stale:" (desatualizado)")
+        case "fr": return L(heading:"Claude Code — Limites d'utilisation",session:"Session (5h)",weekly:"Semaine (tout)",weeklySonnet:"Semaine (Sonnet)",resets:"↻",updated:"Mis à jour",refresh:"Actualiser",close:"Fermer",noData:"Aucune donnée",noDataSub:"Envoyez un message dans Claude Code",stale:" (périmé)")
+        case "de": return L(heading:"Claude Code — Nutzungslimits",session:"Sitzung (5h)",weekly:"Woche (alle)",weeklySonnet:"Woche (Sonnet)",resets:"↻",updated:"Aktualisiert",refresh:"Aktualisieren",close:"Schließen",noData:"Keine Daten",noDataSub:"Sende eine Nachricht in Claude Code",stale:" (veraltet)")
+        default:   return L(heading:"Claude Code — Usage Limits",session:"Session (5h)",weekly:"Weekly (all)",weeklySonnet:"Weekly (Sonnet)",resets:"↻",updated:"Updated",refresh:"Refresh",close:"Close",noData:"No usage data yet",noDataSub:"Send a message in Claude Code",stale:" (stale)")
         }
     }
 }
@@ -72,13 +72,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let l = L.detect()
         let m = NSMenu()
 
+        m.addHeader(l.heading)
+        m.addItem(.separator())
+
         guard let raw   = FileManager.default.contents(atPath: stateFile),
               let state = try? JSONDecoder().decode(UsageState.self, from: raw) else {
             statusItem.button?.title = " --"
-            m.add(l.noData,    size: 13, gray: true)
-            m.add(l.noDataSub, size: 11, gray: true)
+            m.addRow(l.noData, value: "—", symbol: "exclamationmark.circle")
+            m.addPlain(l.noDataSub, size: 11, gray: true)
             m.addItem(.separator())
-            m.add(l.refresh, sel: #selector(doRefresh), target: self)
+            m.addPlain(l.refresh, sel: #selector(doRefresh), target: self)
             statusItem.menu = m
             return
         }
@@ -95,26 +98,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             statusItem.button?.title = " --\(stale)"
         }
 
-        m.add("Claude Code", size: 12, gray: true)
-        m.addItem(.separator())
-
         if let f = fh {
-            m.add("\(l.session)    \(Int(f.usedPercentage))%", size: 13, bold: true)
-            if let ts = f.resetsAt { m.add("\(l.resets) \(fmt(ts))", size: 11) }
+            m.addRow(l.session, value: "\(Int(f.usedPercentage))%", symbol: "clock")
+            if let ts = f.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
         }
         if let s = sd {
-            m.add("\(l.weekly)    \(Int(s.usedPercentage))%", size: 13, bold: true)
-            if let ts = s.resetsAt { m.add("\(l.resets) \(fmt(ts))", size: 11) }
+            m.addRow(l.weekly, value: "\(Int(s.usedPercentage))%", symbol: "calendar")
+            if let ts = s.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
         }
         if let ss = sds {
-            m.add("\(l.weeklySonnet) \(Int(ss.usedPercentage))%", size: 13, bold: true)
+            m.addRow(l.weeklySonnet, value: "\(Int(ss.usedPercentage))%", symbol: "sparkles")
         }
 
         m.addItem(.separator())
-        m.add("\(l.updated) \(fmt(state.updatedAt))", size: 11, gray: true)
+        m.addPlain("\(l.updated) \(fmt(state.updatedAt))", size: 11, gray: true)
         m.addItem(.separator())
-        m.add(l.refresh, sel: #selector(doRefresh), target: self)
-        m.add(l.close,   sel: #selector(doClose),   target: self)
+        m.addPlain(l.refresh, sel: #selector(doRefresh), target: self)
+        m.addPlain(l.close,   sel: #selector(doClose),   target: self)
 
         statusItem.menu = m
     }
@@ -130,18 +130,70 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func doClose()   { statusItem.menu?.cancelTracking() }
 }
 
+// MARK: — NSMenu helpers
+// item.view bypasses macOS disabled-item graying AND hover-highlight for static rows.
+// Interactive items (Refresh / Close) keep standard NSMenuItem rendering.
 extension NSMenu {
-    func add(_ title: String, sel: Selector? = nil, target: AnyObject? = nil,
-             size: CGFloat = 13, bold: Bool = false, gray: Bool = false) {
-        let item = NSMenuItem(title: "", action: sel, keyEquivalent: "")
-        item.target = target
-        var attrs: [NSAttributedString.Key: Any] = [
-            .font: bold ? NSFont.systemFont(ofSize: size, weight: .medium)
-                        : NSFont.systemFont(ofSize: size)
-        ]
-        if gray { attrs[.foregroundColor] = NSColor.secondaryLabelColor }
-        item.attributedTitle = NSAttributedString(string: title, attributes: attrs)
+    func addHeader(_ title: String) {
+        let item = NSMenuItem()
+        item.view = staticView(title, size: 13, bold: true)
         addItem(item)
+    }
+
+    func addRow(_ label: String, value: String, symbol: String? = nil) {
+        let item = NSMenuItem()
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 250, height: 22))
+
+        var leadX: CGFloat = 14
+        if let sym = symbol,
+           let img = NSImage(systemSymbolName: sym, accessibilityDescription: nil),
+           let cfg = img.withSymbolConfiguration(
+               NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)) {
+            let iv = NSImageView(frame: NSRect(x: 8, y: 3, width: 16, height: 16))
+            iv.image = cfg
+            view.addSubview(iv)
+            leadX = 30
+        }
+
+        let lbl = NSTextField(labelWithString: label)
+        lbl.font = .systemFont(ofSize: 13)
+        lbl.textColor = .labelColor
+        lbl.frame = NSRect(x: leadX, y: 2, width: 160, height: 18)
+        view.addSubview(lbl)
+
+        let val = NSTextField(labelWithString: value)
+        val.font = .systemFont(ofSize: 13)
+        val.textColor = .labelColor
+        val.alignment = .right
+        val.frame = NSRect(x: 190, y: 2, width: 46, height: 18)
+        view.addSubview(val)
+
+        item.view = view
+        addItem(item)
+    }
+
+    func addPlain(_ title: String, sel: Selector? = nil, target: AnyObject? = nil,
+                  size: CGFloat = 13, gray: Bool = false, indent: CGFloat = 20) {
+        if let sel = sel {
+            let item = NSMenuItem(title: title, action: sel, keyEquivalent: "")
+            item.target = target
+            addItem(item)
+        } else {
+            let item = NSMenuItem()
+            item.view = staticView(title, size: size, gray: gray, indent: indent)
+            addItem(item)
+        }
+    }
+
+    private func staticView(_ text: String, size: CGFloat = 13, bold: Bool = false,
+                             gray: Bool = false, indent: CGFloat = 14) -> NSView {
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 250, height: size < 12 ? 18 : 22))
+        let lbl = NSTextField(labelWithString: text)
+        lbl.font = bold ? .systemFont(ofSize: size, weight: .semibold) : .systemFont(ofSize: size)
+        lbl.textColor = gray ? .secondaryLabelColor : .labelColor
+        lbl.frame = NSRect(x: indent, y: 1, width: 220, height: size < 12 ? 16 : 18)
+        view.addSubview(lbl)
+        return view
     }
 }
 
