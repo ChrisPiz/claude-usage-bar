@@ -12,7 +12,8 @@ HOOKS_DEST="$CLAUDE_DIR/hooks"
 SETTINGS="$CLAUDE_DIR/settings.json"
 JQ="/usr/bin/jq"
 
-SWIFTBAR_DIR="$HOME/Library/Application Support/SwiftBar"
+SWIFTBAR_DIR="$HOME/Documents/SwiftBar"
+SWIFTBAR_LIBRARY="$HOME/Library/Application Support/SwiftBar"
 XBAR_DIR="$HOME/Library/Application Support/xbar/plugins"
 
 # ── Resolve script location ──────────────────────────────────────────────────
@@ -108,9 +109,14 @@ PLUGIN_SRC="$HOOKS_DEST/claude-usage-bar.1m.sh"
 echo ""
 echo "Installing menu bar plugin ..."
 
-if [ -d "$SWIFTBAR_DIR" ]; then
-  cp "$PLUGIN_SRC" "$SWIFTBAR_DIR/claude-usage-bar.1m.sh"
-  echo "  ✓ SwiftBar plugin installed → $SWIFTBAR_DIR"
+if [ -d "$SWIFTBAR_DIR" ] || [ -d "$SWIFTBAR_LIBRARY" ]; then
+  # Prefer ~/Documents/SwiftBar (visible), fallback to Library
+  TARGET_DIR="$SWIFTBAR_DIR"
+  [ ! -d "$TARGET_DIR" ] && TARGET_DIR="$SWIFTBAR_LIBRARY"
+  mkdir -p "$TARGET_DIR"
+  cp "$PLUGIN_SRC" "$TARGET_DIR/claude-usage-bar.1m.sh"
+  echo "  ✓ SwiftBar plugin installed → $TARGET_DIR"
+  echo "  ℹ  Point SwiftBar to this folder: $TARGET_DIR"
 elif [ -d "$XBAR_DIR" ]; then
   cp "$PLUGIN_SRC" "$XBAR_DIR/claude-usage-bar.1m.sh"
   echo "  ✓ xbar plugin installed → $XBAR_DIR"
@@ -118,7 +124,9 @@ else
   echo "  ℹ  SwiftBar/xbar not found — plugin not installed automatically."
   echo ""
   echo "  Install SwiftBar:  brew install --cask swiftbar"
+  echo "  Create folder:     mkdir -p \"$SWIFTBAR_DIR\""
   echo "  Then run:          cp \"$PLUGIN_SRC\" \"$SWIFTBAR_DIR/\""
+  echo "  Point SwiftBar to: $SWIFTBAR_DIR"
   echo ""
   echo "  Install xbar:      brew install --cask xbar"
   echo "  Then run:          cp \"$PLUGIN_SRC\" \"$XBAR_DIR/\""

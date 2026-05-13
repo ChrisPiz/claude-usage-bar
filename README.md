@@ -50,12 +50,13 @@ Install SwiftBar:
 brew install --cask swiftbar
 ```
 
-Copy the plugin:
+Create a visible plugins folder and copy the plugin:
 ```bash
-cp ~/.claude/hooks/claude-usage-bar.1m.sh ~/Library/Application\ Support/SwiftBar/
+mkdir -p ~/Documents/SwiftBar
+cp ~/.claude/hooks/claude-usage-bar.1m.sh ~/Documents/SwiftBar/
 ```
 
-Point SwiftBar to its plugins folder on first launch. The menu bar icon appears within 1 minute.
+Open SwiftBar and point it to `~/Documents/SwiftBar` when it asks for the plugins folder. The menu bar icon appears within 1 minute.
 
 ---
 
