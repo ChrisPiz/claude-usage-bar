@@ -1,7 +1,5 @@
 Claude Code plan usage in your macOS menu bar.
 
-Independent project. Not affiliated with, endorsed by, or sponsored by Anthropic, Claude, or Claude Code.
-
 ![screenshot](docs/screenshot.png)
 
 ## What it does
@@ -84,3 +82,5 @@ Quit `ClaudeUsageBar`, delete it from `Applications`, and remove the `statusLine
 ## License
 
 MIT
+
+Independent project. Not affiliated with, endorsed by, or sponsored by Anthropic, Claude, or Claude Code.
