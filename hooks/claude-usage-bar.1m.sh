@@ -63,24 +63,24 @@ UPDATED_FMT=$(fmt_reset "$UPDATED_AT")
 echo "◆ ${MAX_PCT}%${STALE}"
 
 echo "---"
-echo "Claude Code | size=13"
+echo "Claude Code | size=13 color=gray"
 echo "---"
 
 # 5-hour session window
 if [ "$FIVE_H" != "?" ]; then
-  echo "Session (5h)    ${FIVE_H}%"
+  echo "Session (5h)    ${FIVE_H}% | size=14 refresh=true"
   echo "Resets ${FIVE_H_RESET_FMT} | size=11 color=gray"
 fi
 
 # 7-day all models
 if [ "$SEVEN_D" != "?" ]; then
-  echo "Weekly (all)    ${SEVEN_D}%"
+  echo "Weekly (all)    ${SEVEN_D}% | size=14 refresh=true"
   echo "Resets ${SEVEN_D_RESET_FMT} | size=11 color=gray"
 fi
 
 # 7-day Sonnet
 if [ "$SEVEN_DS" != "?" ]; then
-  echo "Weekly (Sonnet) ${SEVEN_DS}%"
+  echo "Weekly (Sonnet) ${SEVEN_DS}% | size=14 refresh=true"
   echo "Resets ${SEVEN_D_RESET_FMT} | size=11 color=gray"
 fi
 
