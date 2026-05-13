@@ -2,11 +2,11 @@
 # install.sh — claude-usage-bar installer
 #
 # Usage (from clone):  bash install.sh
-# Usage (one-liner):   bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main/install.sh)
+# Usage (one-liner):   bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/Claude-Code-Usage-Bar/main/install.sh)
 
 set -euo pipefail
 
-REPO_RAW="https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main"
+REPO_RAW="https://raw.githubusercontent.com/ChrisPiz/Claude-Code-Usage-Bar/main"
 CLAUDE_DIR="$HOME/.claude"
 HOOKS_DEST="$CLAUDE_DIR/hooks"
 SETTINGS="$CLAUDE_DIR/settings.json"
@@ -117,7 +117,7 @@ if [ "${SKIP_BUILD:-0}" = "1" ]; then
     echo "  ✓ Launched existing $APP_DEST"
   else
     echo "  ⚠  $APP_DEST not found. Download from:"
-    echo "  https://github.com/ChrisPiz/claude-usage-bar/releases/latest"
+    echo "  https://github.com/ChrisPiz/Claude-Code-Usage-Bar/releases/latest"
   fi
 else
 echo "Building ClaudeUsageBar.app ..."

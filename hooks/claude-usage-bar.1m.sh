@@ -8,7 +8,7 @@
 #   SwiftBar: ~/Library/Application Support/SwiftBar/
 #   xbar:     ~/Library/Application Support/xbar/plugins/
 #
-# Project: https://github.com/ChrisPiz/claude-usage-bar
+# Project: https://github.com/ChrisPiz/Claude-Code-Usage-Bar
 
 STATE_FILE="$HOME/.claude/.claude-usage-state.json"
 JQ="/usr/bin/jq"

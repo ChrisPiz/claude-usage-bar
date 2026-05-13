@@ -1,5 +1,7 @@
 Claude Code plan usage in your terminal statusline and macOS menu bar.
 
+Independent project. Not affiliated with, endorsed by, or sponsored by Anthropic, Claude, or Claude Code.
+
 ![screenshot](docs/screenshot.png)
 
 ```
@@ -23,51 +25,31 @@ The menu bar icon auto-tints for light/dark mode and the interface uses your mac
 
 - macOS 13+
 - [Claude Code](https://claude.ai/code) with a Pro or Team subscription
-- `jq` — likely already installed (`which jq`), otherwise: `brew install jq`
-- Xcode Command Line Tools — likely already installed (`xcode-select -p`), otherwise: `xcode-select --install`
 
 ---
 
 ## Install
 
-### Option A — One-liner (recommended)
+### Download the DMG
 
-Compiles the app locally — no Gatekeeper issues, no extra permissions needed.
+Download `ClaudeUsageBar.dmg` from the [latest release](https://github.com/ChrisPiz/Claude-Code-Usage-Bar/releases/latest), open it, and drag `ClaudeUsageBar.app` to `Applications`.
 
-```bash
-bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main/install.sh)
+Open the app once. On first launch it configures Claude Code automatically by adding this statusline command to `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "\"/Applications/ClaudeUsageBar.app/Contents/MacOS/ClaudeUsageBar\" --statusline"
+  }
+}
 ```
 
-Requires: `jq` + Xcode Command Line Tools (`xcode-select --install`, already present on most Macs).
+Restart Claude Code, then send any message. The terminal badge appears after the first response, and the menu bar app updates from the same data.
 
-The installer:
-1. Copies scripts to `~/.claude/hooks/`
-2. Adds `statusLine` to `~/.claude/settings.json`
-3. Compiles and launches `ClaudeUsageBar.app` in `~/Applications/`
+If you already have a custom Claude Code `statusLine`, the app will not overwrite it.
 
-Then send any message in Claude Code — the badges appear after the first response.
-
-### Option B — Pre-built binary
-
-Download `ClaudeUsageBar.zip` from the [latest release](https://github.com/ChrisPiz/claude-usage-bar/releases/latest), unzip, move to `~/Applications/`, then:
-
-```bash
-# Remove Gatekeeper quarantine (required for unsigned apps downloaded from the web)
-xattr -cr ~/Applications/ClaudeUsageBar.app
-open ~/Applications/ClaudeUsageBar.app
-```
-
-You still need the hook script for the terminal badge and state file:
-
-```bash
-bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main/install.sh)
-```
-
-Run it with `SKIP_BUILD=1` to skip the compile step if you already have the app:
-
-```bash
-SKIP_BUILD=1 bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main/install.sh)
-```
+Unsigned local builds may require right-click → Open. Public releases should be signed and notarized.
 
 ---
 
@@ -75,21 +57,21 @@ SKIP_BUILD=1 bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-us
 
 Add the app to Login Items so it launches automatically:
 
-**System Settings → General → Login Items → +** → select `~/Applications/ClaudeUsageBar.app`
+**System Settings → General → Login Items → +** → select `/Applications/ClaudeUsageBar.app`
 
 ---
 
 ## How it works
 
 ```
-Claude Code → JSON via stdin → usage-statusline.sh ──→ ANSI badge (terminal)
-                                        │
-                                        └──→ ~/.claude/.claude-usage-state.json
-                                                          │
-                                       ClaudeUsageBar.app ──→ menu bar
+Claude Code → JSON via stdin → ClaudeUsageBar --statusline ──→ ANSI badge (terminal)
+                                                    │
+                                                    └──→ ~/.claude/.claude-usage-state.json
+                                                                      │
+                                                   ClaudeUsageBar.app ──→ menu bar
 ```
 
-After each message, Claude Code passes usage data to the `statusLine` script. That script formats the terminal badge and writes a state file. The menu bar app reads that file every 60 seconds.
+After each message, Claude Code passes usage data to the app's `--statusline` mode. It formats the terminal badge and writes a state file. The menu bar app reads that file every 60 seconds.
 
 ---
 
@@ -105,41 +87,39 @@ If you use the [caveman](https://github.com/superpowers/caveman) Claude Code plu
 
 ## Custom statusline integration
 
-If you already have a custom `statusLine` script, the installer won't overwrite it. Add this snippet to your existing script:
+If you already have a custom `statusLine` script, the app won't overwrite it. Add this snippet to your existing script:
 
 ```bash
 # claude-usage-bar usage badges
-USAGE_HOOK="$HOME/.claude/hooks/usage-statusline.sh"
-if [ -f "$USAGE_HOOK" ]; then
-  usage_out=$(cat | "$USAGE_HOOK")
+USAGE_BAR="/Applications/ClaudeUsageBar.app/Contents/MacOS/ClaudeUsageBar"
+if [ -x "$USAGE_BAR" ]; then
+  usage_out=$(cat | "$USAGE_BAR" --statusline)
   printf '%s  %s\n' "$your_existing_output" "$usage_out"
 fi
 ```
 
 ---
 
-## SwiftBar / xbar (optional)
+## Building a DMG
 
-If you already use [SwiftBar](https://swiftbar.app) or [xbar](https://xbarapp.com), the installer also drops the plugin in your plugins folder automatically. Both the native app and the SwiftBar plugin can coexist.
+For maintainers:
 
-Manual SwiftBar setup:
 ```bash
-mkdir -p ~/Documents/SwiftBar
-cp ~/.claude/hooks/claude-usage-bar.1m.sh ~/Documents/SwiftBar/
+bash build.sh
 ```
+
+The build writes:
+
+- `dist/ClaudeUsageBar.app`
+- `dist/ClaudeUsageBar.dmg`
+
+Set `CODE_SIGN_IDENTITY` to sign with a Developer ID certificate. Without it, the app is ad-hoc signed for local testing.
 
 ---
 
 ## Uninstall
 
-```bash
-bash ~/.claude/hooks/uninstall.sh
-```
-
-Or via curl:
-```bash
-bash <(curl -s https://raw.githubusercontent.com/ChrisPiz/claude-usage-bar/main/uninstall.sh)
-```
+Quit `ClaudeUsageBar`, delete it from `Applications`, and remove the `statusLine` entry from `~/.claude/settings.json`.
 
 ---
 

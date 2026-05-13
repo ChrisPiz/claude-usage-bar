@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# build.sh — compiles ClaudeUsageBar.app from source
+# build.sh — compiles ClaudeUsageBar.app and packages a DMG
 # Requires: Xcode Command Line Tools (xcode-select --install)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_NAME="ClaudeUsageBar"
-INSTALL_DIR="$HOME/Applications"
-APP_DEST="$INSTALL_DIR/$APP_NAME.app"
+DIST_DIR="$SCRIPT_DIR/dist"
+APP_DEST="$DIST_DIR/$APP_NAME.app"
 MACOS_DIR="$APP_DEST/Contents/MacOS"
 BUILD_TMP="/tmp/${APP_NAME}_build"
+DMG_STAGING="/tmp/${APP_NAME}_dmg"
+DMG_DEST="$DIST_DIR/$APP_NAME.dmg"
 
 echo "Building $APP_NAME ..."
 
@@ -21,14 +23,14 @@ if ! command -v swiftc &>/dev/null; then
 fi
 
 # Prepare
-rm -rf "$BUILD_TMP" && mkdir -p "$BUILD_TMP"
+rm -rf "$BUILD_TMP" "$APP_DEST" "$DMG_STAGING"
+mkdir -p "$BUILD_TMP" "$DIST_DIR"
 mkdir -p "$MACOS_DIR"
 
 # Compile
 swiftc "$SCRIPT_DIR/src/ClaudeUsageBar.swift" \
   -o "$BUILD_TMP/$APP_NAME" \
-  -O \
-  2>&1 | grep -v "^$" || true
+  -O
 
 cp "$BUILD_TMP/$APP_NAME" "$MACOS_DIR/$APP_NAME"
 chmod +x "$MACOS_DIR/$APP_NAME"
@@ -52,9 +54,31 @@ cat > "$APP_DEST/Contents/Info.plist" << 'PLIST'
 </plist>
 PLIST
 
+if command -v codesign &>/dev/null; then
+  codesign --force --deep --sign "${CODE_SIGN_IDENTITY:--}" "$APP_DEST" >/dev/null
+fi
+
 rm -rf "$BUILD_TMP"
 
 echo "  ✓ Built → $APP_DEST"
 echo ""
-echo "To launch:  open \"$APP_DEST\""
-echo "To autostart: add it to System Settings → General → Login Items"
+
+if command -v hdiutil &>/dev/null; then
+  echo "Packaging DMG ..."
+  mkdir -p "$DMG_STAGING"
+  cp -R "$APP_DEST" "$DMG_STAGING/"
+  ln -s /Applications "$DMG_STAGING/Applications"
+  hdiutil create \
+    -volname "$APP_NAME" \
+    -srcfolder "$DMG_STAGING" \
+    -ov \
+    -format UDZO \
+    "$DMG_DEST" >/dev/null
+  rm -rf "$DMG_STAGING"
+  echo "  ✓ DMG → $DMG_DEST"
+else
+  echo "  ⚠ hdiutil not found; DMG was not created."
+fi
+
+echo ""
+echo "Release artifact: $DMG_DEST"

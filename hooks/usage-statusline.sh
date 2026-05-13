@@ -5,7 +5,7 @@
 # Outputs colored ANSI badges to stdout (shown in terminal statusline).
 # Writes ~/.claude/.claude-usage-state.json for the menu bar plugin.
 #
-# Project: https://github.com/ChrisPiz/claude-usage-bar
+# Project: https://github.com/ChrisPiz/Claude-Code-Usage-Bar
 
 set -euo pipefail
 
