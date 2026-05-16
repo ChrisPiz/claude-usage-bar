@@ -311,6 +311,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
     var statusTimer: Timer?
     var claudeStatus: ClaudeStatus?
     let statusFetchURL = URL(string: "https://status.claude.com/api/v2/summary.json")!
+    var isFetchingStatus = false
 
     func applicationDidFinishLaunching(_ n: Notification) {
         setupStatus = configureClaudeStatusLine()
@@ -326,7 +327,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
             self?.update()
         }
         UNUserNotificationCenter.current().delegate = self
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            if !granted {
+                DispatchQueue.main.async {
+                    UserDefaults.standard.set(false, forKey: "statusAlertsEnabled")
+                }
+            }
+        }
         fetchClaudeStatus()
         statusTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             self?.fetchClaudeStatus()
@@ -430,10 +437,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
     }
 
     func fetchClaudeStatus() {
+        guard !isFetchingStatus else { return }
+        isFetchingStatus = true
         let task = URLSession.shared.dataTask(with: statusFetchURL) { [weak self] data, _, error in
             guard let self, let data, error == nil,
                   let response = try? JSONDecoder().decode(StatusAPIResponse.self, from: data)
-            else { return }
+            else {
+                DispatchQueue.main.async { self?.isFetchingStatus = false }
+                return
+            }
 
             let filtered = response.components.filter {
                 $0.name.contains("Claude Code") || $0.name.contains("Claude API")
@@ -449,7 +461,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
             if alertsOn && !unseen.isEmpty {
                 for incident in unseen {
                     let content = UNMutableNotificationContent()
-                    content.title = "Claude incident detected"
+                    content.title = L.detect().statusHeading
                     content.body = incident.name
                     content.sound = .default
                     let req = UNNotificationRequest(
@@ -465,6 +477,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
             defaults.set(allSeen, forKey: "seenIncidentIDs")
 
             DispatchQueue.main.async {
+                self.isFetchingStatus = false
                 self.claudeStatus = newStatus
                 self.update()
             }
