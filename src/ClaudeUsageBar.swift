@@ -292,7 +292,7 @@ struct L {
     static func detect() -> L {
         let code = Locale.current.language.languageCode?.identifier ?? "en"
         switch code {
-        case "es": return L(heading:"Claude Code — Límites de uso",session:"Sesión (5h)",weekly:"Semana (todo)",weeklySonnet:"Semana (Sonnet)",resets:"↻",updated:"Actualizado",refresh:"Actualizar",close:"Cerrar",noData:"Sin datos de uso",noDataSub:"Envía un mensaje en Claude Code",stale:" (desactualizado)",statusHeading:"Sistema Claude",operational:"Operativo",degraded:"Con problemas",outage:"Sin servicio",alertsToggle:"Alertas de incidentes",statusLoading:"Obteniendo estado...")
+        case "es": return L(heading:"Claude Code — Límites de uso",session:"Sesión (5h)",weekly:"Semana (todo)",weeklySonnet:"Semana (Sonnet)",resets:"↻",updated:"Actualizado",refresh:"Actualizar",close:"Cerrar",noData:"Sin datos de uso",noDataSub:"Envía un mensaje en Claude Code",stale:" (desactualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Con problemas",outage:"Sin servicio",alertsToggle:"Alertas de incidentes",statusLoading:"Obteniendo estado...")
         case "pt": return L(heading:"Claude Code — Limites de uso",session:"Sessão (5h)",weekly:"Semana (tudo)",weeklySonnet:"Semana (Sonnet)",resets:"↻",updated:"Atualizado",refresh:"Atualizar",close:"Fechar",noData:"Sem dados de uso",noDataSub:"Envie uma mensagem no Claude Code",stale:" (desatualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Com problemas",outage:"Fora do ar",alertsToggle:"Alertas de incidentes",statusLoading:"Obtendo status...")
         case "fr": return L(heading:"Claude Code — Limites d'utilisation",session:"Session (5h)",weekly:"Semaine (tout)",weeklySonnet:"Semaine (Sonnet)",resets:"↻",updated:"Mis à jour",refresh:"Actualiser",close:"Fermer",noData:"Aucune donnée",noDataSub:"Envoyez un message dans Claude Code",stale:" (périmé)",statusHeading:"Statut Claude",operational:"Opérationnel",degraded:"Problèmes",outage:"Hors ligne",alertsToggle:"Alertes d'incidents",statusLoading:"Chargement...")
         case "de": return L(heading:"Claude Code — Nutzungslimits",session:"Sitzung (5h)",weekly:"Woche (alle)",weeklySonnet:"Woche (Sonnet)",resets:"↻",updated:"Aktualisiert",refresh:"Aktualisieren",close:"Schließen",noData:"Keine Daten",noDataSub:"Sende eine Nachricht in Claude Code",stale:" (veraltet)",statusHeading:"Claude-Status",operational:"Verfügbar",degraded:"Probleme",outage:"Nicht verfügbar",alertsToggle:"Störungsmeldungen",statusLoading:"Wird geladen...")
@@ -398,7 +398,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
 
         // Status section (below usage)
         m.addItem(.separator())
-        m.addHeader(l.statusHeading)
+        let statusHeadingItem = NSMenuItem(title: l.statusHeading, action: #selector(openClaudeStatus), keyEquivalent: "")
+        statusHeadingItem.target = self
+        statusHeadingItem.attributedTitle = NSAttributedString(
+            string: l.statusHeading,
+            attributes: [.font: NSFont.systemFont(ofSize: 13, weight: .semibold)]
+        )
+        m.addItem(statusHeadingItem)
         if let cs = claudeStatus {
             for comp in cs.components {
                 m.addStatusRow(comp.name, status: comp.status,
@@ -572,6 +578,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
 
     @objc func openGitHub() {
         if let url = URL(string: "https://github.com/ChrisPiz/Claude-Code-Usage-Bar") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    @objc func openClaudeStatus() {
+        if let url = URL(string: "https://status.claude.com/") {
             NSWorkspace.shared.open(url)
         }
     }
