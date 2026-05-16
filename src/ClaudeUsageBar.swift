@@ -289,15 +289,15 @@ func makeStatusBadgedIcon(size: CGFloat) -> NSImage {
 struct L {
     let heading, session, weekly, weeklySonnet, resets, updated, refresh, close, noData, noDataSub, stale: String
     let statusHeading, operational, degraded, outage, alertsToggle, statusLoading: String
-    let used, resetsIn: String
+    let used, resetsIn, resetsOn, resetsAt: String
     static func detect() -> L {
         let code = Locale.current.language.languageCode?.identifier ?? "en"
         switch code {
-        case "es": return L(heading:"Claude Code — Límites de uso",session:"Sesión actual",weekly:"Límites semanales",weeklySonnet:"",resets:"↻",updated:"Actualizado",refresh:"Actualizar",close:"Cerrar",noData:"Sin datos de uso",noDataSub:"Envía un mensaje en Claude Code",stale:" (desactualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Con problemas",outage:"Sin servicio",alertsToggle:"Alertas de incidentes",statusLoading:"Obteniendo estado...",used:"usado",resetsIn:"Se restablece en")
-        case "pt": return L(heading:"Claude Code — Limites de uso",session:"Sessão atual",weekly:"Limites semanais",weeklySonnet:"",resets:"↻",updated:"Atualizado",refresh:"Atualizar",close:"Fechar",noData:"Sem dados de uso",noDataSub:"Envie uma mensagem no Claude Code",stale:" (desatualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Com problemas",outage:"Fora do ar",alertsToggle:"Alertas de incidentes",statusLoading:"Obtendo status...",used:"usado",resetsIn:"Reinicia em")
-        case "fr": return L(heading:"Claude Code — Limites d'utilisation",session:"Session actuelle",weekly:"Limites hebdomadaires",weeklySonnet:"",resets:"↻",updated:"Mis à jour",refresh:"Actualiser",close:"Fermer",noData:"Aucune donnée",noDataSub:"Envoyez un message dans Claude Code",stale:" (périmé)",statusHeading:"Statut Claude",operational:"Opérationnel",degraded:"Problèmes",outage:"Hors ligne",alertsToggle:"Alertes d'incidents",statusLoading:"Chargement...",used:"utilisé",resetsIn:"Réinitialisation dans")
-        case "de": return L(heading:"Claude Code — Nutzungslimits",session:"Aktuelle Sitzung",weekly:"Wochenlimits",weeklySonnet:"",resets:"↻",updated:"Aktualisiert",refresh:"Aktualisieren",close:"Schließen",noData:"Keine Daten",noDataSub:"Sende eine Nachricht in Claude Code",stale:" (veraltet)",statusHeading:"Claude-Status",operational:"Verfügbar",degraded:"Probleme",outage:"Nicht verfügbar",alertsToggle:"Störungsmeldungen",statusLoading:"Wird geladen...",used:"genutzt",resetsIn:"Zurückgesetzt in")
-        default:   return L(heading:"Claude Code — Usage Limits",session:"Current session",weekly:"Weekly limits",weeklySonnet:"",resets:"↻",updated:"Updated",refresh:"Refresh",close:"Close",noData:"No usage data yet",noDataSub:"Send a message in Claude Code",stale:" (stale)",statusHeading:"Claude System Status",operational:"Online",degraded:"Issues",outage:"Down",alertsToggle:"Incident Alerts",statusLoading:"Fetching status...",used:"used",resetsIn:"Resets in")
+        case "es": return L(heading:"Claude Code — Límites de uso",session:"Sesión actual",weekly:"Límites semanales",weeklySonnet:"",resets:"↻",updated:"Actualizado",refresh:"Actualizar",close:"Cerrar",noData:"Sin datos de uso",noDataSub:"Envía un mensaje en Claude Code",stale:" (desactualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Con problemas",outage:"Sin servicio",alertsToggle:"Alertas de incidentes",statusLoading:"Obteniendo estado...",used:"usado",resetsIn:"Se restablece en",resetsOn:"Se restablece el",resetsAt:"a las")
+        case "pt": return L(heading:"Claude Code — Limites de uso",session:"Sessão atual",weekly:"Limites semanais",weeklySonnet:"",resets:"↻",updated:"Atualizado",refresh:"Atualizar",close:"Fechar",noData:"Sem dados de uso",noDataSub:"Envie uma mensagem no Claude Code",stale:" (desatualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Com problemas",outage:"Fora do ar",alertsToggle:"Alertas de incidentes",statusLoading:"Obtendo status...",used:"usado",resetsIn:"Reinicia em",resetsOn:"Reinicia na",resetsAt:"às")
+        case "fr": return L(heading:"Claude Code — Limites d'utilisation",session:"Session actuelle",weekly:"Limites hebdomadaires",weeklySonnet:"",resets:"↻",updated:"Mis à jour",refresh:"Actualiser",close:"Fermer",noData:"Aucune donnée",noDataSub:"Envoyez un message dans Claude Code",stale:" (périmé)",statusHeading:"Statut Claude",operational:"Opérationnel",degraded:"Problèmes",outage:"Hors ligne",alertsToggle:"Alertes d'incidents",statusLoading:"Chargement...",used:"utilisé",resetsIn:"Réinitialisation dans",resetsOn:"Réinitialisation le",resetsAt:"à")
+        case "de": return L(heading:"Claude Code — Nutzungslimits",session:"Aktuelle Sitzung",weekly:"Wochenlimits",weeklySonnet:"",resets:"↻",updated:"Aktualisiert",refresh:"Aktualisieren",close:"Schließen",noData:"Keine Daten",noDataSub:"Sende eine Nachricht in Claude Code",stale:" (veraltet)",statusHeading:"Claude-Status",operational:"Verfügbar",degraded:"Probleme",outage:"Nicht verfügbar",alertsToggle:"Störungsmeldungen",statusLoading:"Wird geladen...",used:"genutzt",resetsIn:"Zurückgesetzt in",resetsOn:"Zurückgesetzt am",resetsAt:"um")
+        default:   return L(heading:"Claude Code — Usage Limits",session:"Current session",weekly:"Weekly limits",weeklySonnet:"",resets:"↻",updated:"Updated",refresh:"Refresh",close:"Close",noData:"No usage data yet",noDataSub:"Send a message in Claude Code",stale:" (stale)",statusHeading:"Claude System Status",operational:"Online",degraded:"Issues",outage:"Down",alertsToggle:"Incident Alerts",statusLoading:"Fetching status...",used:"used",resetsIn:"Resets in",resetsOn:"Resets on",resetsAt:"at")
         }
     }
 }
@@ -439,10 +439,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
     func relativeReset(_ ts: Int, now: Int, l: L) -> String {
         let diff = ts - now
         guard diff > 0 else { return "" }
-        let days  = diff / 86400
-        let hours = (diff % 86400) / 3600
+        if diff >= 86400 {
+            let date = Date(timeIntervalSince1970: TimeInterval(ts))
+            let dayFmt = DateFormatter()
+            dayFmt.dateFormat = "EEEE"
+            let timeFmt = DateFormatter()
+            timeFmt.timeStyle = .short
+            timeFmt.dateStyle = .none
+            return "\(l.resetsOn) \(dayFmt.string(from: date)) \(l.resetsAt) \(timeFmt.string(from: date))"
+        }
+        let hours = diff / 3600
         let mins  = (diff % 3600) / 60
-        if days > 0  { return "\(l.resetsIn) \(days) d \(hours) h" }
         if hours > 0 { return "\(l.resetsIn) \(hours) h \(mins) min" }
         return "\(l.resetsIn) \(mins) min"
     }
