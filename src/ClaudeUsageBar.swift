@@ -289,14 +289,15 @@ func makeStatusBadgedIcon(size: CGFloat) -> NSImage {
 struct L {
     let heading, session, weekly, weeklySonnet, resets, updated, refresh, close, noData, noDataSub, stale: String
     let statusHeading, operational, degraded, outage, alertsToggle, statusLoading: String
+    let used, resetsIn: String
     static func detect() -> L {
         let code = Locale.current.language.languageCode?.identifier ?? "en"
         switch code {
-        case "es": return L(heading:"Claude Code — Límites de uso",session:"Sesión actual",weekly:"Límites semanales",weeklySonnet:"Solo Sonnet",resets:"↻",updated:"Actualizado",refresh:"Actualizar",close:"Cerrar",noData:"Sin datos de uso",noDataSub:"Envía un mensaje en Claude Code",stale:" (desactualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Con problemas",outage:"Sin servicio",alertsToggle:"Alertas de incidentes",statusLoading:"Obteniendo estado...")
-        case "pt": return L(heading:"Claude Code — Limites de uso",session:"Sessão atual",weekly:"Limites semanais",weeklySonnet:"Apenas Sonnet",resets:"↻",updated:"Atualizado",refresh:"Atualizar",close:"Fechar",noData:"Sem dados de uso",noDataSub:"Envie uma mensagem no Claude Code",stale:" (desatualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Com problemas",outage:"Fora do ar",alertsToggle:"Alertas de incidentes",statusLoading:"Obtendo status...")
-        case "fr": return L(heading:"Claude Code — Limites d'utilisation",session:"Session actuelle",weekly:"Limites hebdomadaires",weeklySonnet:"Sonnet uniquement",resets:"↻",updated:"Mis à jour",refresh:"Actualiser",close:"Fermer",noData:"Aucune donnée",noDataSub:"Envoyez un message dans Claude Code",stale:" (périmé)",statusHeading:"Statut Claude",operational:"Opérationnel",degraded:"Problèmes",outage:"Hors ligne",alertsToggle:"Alertes d'incidents",statusLoading:"Chargement...")
-        case "de": return L(heading:"Claude Code — Nutzungslimits",session:"Aktuelle Sitzung",weekly:"Wochenlimits",weeklySonnet:"Nur Sonnet",resets:"↻",updated:"Aktualisiert",refresh:"Aktualisieren",close:"Schließen",noData:"Keine Daten",noDataSub:"Sende eine Nachricht in Claude Code",stale:" (veraltet)",statusHeading:"Claude-Status",operational:"Verfügbar",degraded:"Probleme",outage:"Nicht verfügbar",alertsToggle:"Störungsmeldungen",statusLoading:"Wird geladen...")
-        default:   return L(heading:"Claude Code — Usage Limits",session:"Current session",weekly:"Weekly limits",weeklySonnet:"Sonnet only",resets:"↻",updated:"Updated",refresh:"Refresh",close:"Close",noData:"No usage data yet",noDataSub:"Send a message in Claude Code",stale:" (stale)",statusHeading:"Claude System Status",operational:"Online",degraded:"Issues",outage:"Down",alertsToggle:"Incident Alerts",statusLoading:"Fetching status...")
+        case "es": return L(heading:"Claude Code — Límites de uso",session:"Sesión actual",weekly:"Límites semanales",weeklySonnet:"",resets:"↻",updated:"Actualizado",refresh:"Actualizar",close:"Cerrar",noData:"Sin datos de uso",noDataSub:"Envía un mensaje en Claude Code",stale:" (desactualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Con problemas",outage:"Sin servicio",alertsToggle:"Alertas de incidentes",statusLoading:"Obteniendo estado...",used:"usado",resetsIn:"Se restablece en")
+        case "pt": return L(heading:"Claude Code — Limites de uso",session:"Sessão atual",weekly:"Limites semanais",weeklySonnet:"",resets:"↻",updated:"Atualizado",refresh:"Atualizar",close:"Fechar",noData:"Sem dados de uso",noDataSub:"Envie uma mensagem no Claude Code",stale:" (desatualizado)",statusHeading:"Status Claude",operational:"Operativo",degraded:"Com problemas",outage:"Fora do ar",alertsToggle:"Alertas de incidentes",statusLoading:"Obtendo status...",used:"usado",resetsIn:"Reinicia em")
+        case "fr": return L(heading:"Claude Code — Limites d'utilisation",session:"Session actuelle",weekly:"Limites hebdomadaires",weeklySonnet:"",resets:"↻",updated:"Mis à jour",refresh:"Actualiser",close:"Fermer",noData:"Aucune donnée",noDataSub:"Envoyez un message dans Claude Code",stale:" (périmé)",statusHeading:"Statut Claude",operational:"Opérationnel",degraded:"Problèmes",outage:"Hors ligne",alertsToggle:"Alertes d'incidents",statusLoading:"Chargement...",used:"utilisé",resetsIn:"Réinitialisation dans")
+        case "de": return L(heading:"Claude Code — Nutzungslimits",session:"Aktuelle Sitzung",weekly:"Wochenlimits",weeklySonnet:"",resets:"↻",updated:"Aktualisiert",refresh:"Aktualisieren",close:"Schließen",noData:"Keine Daten",noDataSub:"Sende eine Nachricht in Claude Code",stale:" (veraltet)",statusHeading:"Claude-Status",operational:"Verfügbar",degraded:"Probleme",outage:"Nicht verfügbar",alertsToggle:"Störungsmeldungen",statusLoading:"Wird geladen...",used:"genutzt",resetsIn:"Zurückgesetzt in")
+        default:   return L(heading:"Claude Code — Usage Limits",session:"Current session",weekly:"Weekly limits",weeklySonnet:"",resets:"↻",updated:"Updated",refresh:"Refresh",close:"Close",noData:"No usage data yet",noDataSub:"Send a message in Claude Code",stale:" (stale)",statusHeading:"Claude System Status",operational:"Online",degraded:"Issues",outage:"Down",alertsToggle:"Incident Alerts",statusLoading:"Fetching status...",used:"used",resetsIn:"Resets in")
         }
     }
 }
@@ -363,7 +364,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
             let stale = (now - state.updatedAt) > 21600 ? l.stale : ""
             let fh    = state.rateLimits?.fiveHour
             let sd    = state.rateLimits?.sevenDay
-            let sds   = state.rateLimits?.sevenDaySonnet
 
             if let f = fh {
                 statusItem.button?.title = " \(effectiveUsedPercentage(f, now: now))%\(stale)"
@@ -372,15 +372,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
             }
 
             if let f = fh {
-                m.addRow(l.session, value: "\(effectiveUsedPercentage(f, now: now))%", symbol: "clock")
-                if let ts = f.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
+                m.addRow(l.session, value: "\(effectiveUsedPercentage(f, now: now))% \(l.used)", symbol: "clock")
+                if let ts = f.resetsAt {
+                    let rel = relativeReset(ts, now: now, l: l)
+                    if !rel.isEmpty { m.addPlain(rel, size: 11, gray: true) }
+                }
             }
             if let s = sd {
-                m.addRow(l.weekly, value: "\(effectiveUsedPercentage(s, now: now))%", symbol: "calendar")
-                if let ts = s.resetsAt { m.addPlain("\(l.resets) \(fmt(ts))", size: 11, gray: true) }
-            }
-            if let ss = sds {
-                m.addRow(l.weeklySonnet, value: "\(effectiveUsedPercentage(ss, now: now))%", symbol: "sparkles")
+                m.addRow(l.weekly, value: "\(effectiveUsedPercentage(s, now: now))% \(l.used)", symbol: "calendar")
+                if let ts = s.resetsAt {
+                    let rel = relativeReset(ts, now: now, l: l)
+                    if !rel.isEmpty { m.addPlain(rel, size: 11, gray: true) }
+                }
             }
             m.addItem(.separator())
             m.addPlain("\(l.updated) \(fmt(state.updatedAt))", size: 11, gray: true)
@@ -431,6 +434,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotifi
         let f = DateFormatter()
         f.dateFormat = "MMM d HH:mm"
         return f.string(from: d)
+    }
+
+    func relativeReset(_ ts: Int, now: Int, l: L) -> String {
+        let diff = ts - now
+        guard diff > 0 else { return "" }
+        let hours = diff / 3600
+        let mins  = (diff % 3600) / 60
+        return hours > 0 ? "\(l.resetsIn) \(hours) h \(mins) min" : "\(l.resetsIn) \(mins) min"
     }
 
     func fetchClaudeStatus() {
@@ -629,14 +640,14 @@ extension NSMenu {
         let lbl = NSTextField(labelWithString: label)
         lbl.font = .systemFont(ofSize: 13)
         lbl.textColor = .labelColor
-        lbl.frame = NSRect(x: leadX, y: 2, width: 160, height: 18)
+        lbl.frame = NSRect(x: leadX, y: 2, width: 110, height: 18)
         view.addSubview(lbl)
 
         let val = NSTextField(labelWithString: value)
         val.font = .systemFont(ofSize: 13)
         val.textColor = .labelColor
         val.alignment = .right
-        val.frame = NSRect(x: 190, y: 2, width: 46, height: 18)
+        val.frame = NSRect(x: 144, y: 2, width: 92, height: 18)
         view.addSubview(val)
 
         item.view = view
