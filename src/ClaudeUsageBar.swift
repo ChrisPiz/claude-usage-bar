@@ -28,6 +28,33 @@ struct UsageState: Codable {
     }
 }
 
+// MARK: — Claude Status
+struct StatusComponent: Codable {
+    let id: String
+    let name: String
+    let status: String
+}
+
+struct StatusIncident: Codable {
+    let id: String
+    let name: String
+    let status: String
+}
+
+struct StatusAPIResponse: Codable {
+    let components: [StatusComponent]
+    let incidents: [StatusIncident]
+}
+
+struct ClaudeStatus {
+    let components: [StatusComponent]
+    let incidents: [StatusIncident]
+    let fetchedAt: Date
+    var hasIssue: Bool {
+        !incidents.isEmpty || components.contains { $0.status != "operational" }
+    }
+}
+
 struct StatusLineInput: Codable {
     let rateLimits: RateLimits?
     enum CodingKeys: String, CodingKey {
